@@ -2,227 +2,254 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Chef Video Vault</title>
     
     <!-- PWA Meta Tags -->
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#D4AF37">
+    <meta name="theme-color" content="#FFFFFF">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <link rel="apple-touch-icon" href="icon-192.png">
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://apis.google.com/js/api.js" async defer></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    
     <style>
-        :root { --gold: #D4AF37; --gold-hover: #B8860B; }
-        .bg-gold { background-color: var(--gold); }
-        .text-gold { color: var(--gold); }
-        .border-gold { border-color: var(--gold); }
-        .btn-gold { background: var(--gold); color: black; font-weight: bold; transition: all 0.3s; }
-        .btn-gold:hover { background: var(--gold-hover); transform: translateY(-2px); }
-        body { background-color: #000; color: #fff; font-family: 'Inter', sans-serif; }
-        ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-track { background: #000; }
-        ::-webkit-scrollbar-thumb { background: #D4AF37; border-radius: 10px; }
+        :root { --gold: #D4AF37; --gold-dark: #B8860B; }
+        body { 
+            background-color: #FFFFFF; 
+            color: #000000; 
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+        
+        .glass {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .apple-input {
+            background: #f2f2f7;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            color: #000000;
+            transition: all 0.2s ease;
+        }
+        .apple-input:focus {
+            border-color: var(--gold);
+            background: #ffffff;
+            box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.1);
+        }
+
+        .btn-apple-gold {
+            background: var(--gold);
+            color: #ffffff;
+            font-weight: 600;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .btn-apple-gold:active { transform: scale(0.96); opacity: 0.8; }
+
+        .video-card {
+            background: #ffffff;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+            border-radius: 1.5rem;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        .video-card:active { transform: scale(0.97); background: #fafafa; }
+
+        .tab-active { background: #ffffff; box-shadow: 0 2px 8px rgba(0,0,0,0.1); color: #000; }
+
+        ::-webkit-scrollbar { width: 0px; }
+        .safe-area-inset { padding-bottom: env(safe-area-inset-bottom); }
+        .fade-up { animation: fadeUp 0.5s ease-out forwards; }
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
     </style>
 </head>
-<body class="min-h-screen pb-20">
+<body class="min-h-screen selection:bg-gold/20">
 
     <!-- Header -->
-    <header class="border-b border-zinc-800 p-6 bg-zinc-950 sticky top-0 z-30">
-        <h1 class="text-2xl font-black text-center tracking-tighter uppercase italic text-white">
-            Chef <span class="text-gold">Video Vault</span>
-        </h1>
+    <header class="glass sticky top-0 z-40 px-6 py-4 flex justify-between items-center text-black">
+        <div class="flex flex-col">
+            <span class="text-[10px] uppercase tracking-[0.4em] text-zinc-400 font-bold">Safe Deposit</span>
+            <h1 class="text-xl font-extrabold tracking-tighter italic">
+                CHEF <span class="text-gold uppercase not-italic">Vault</span>
+            </h1>
+        </div>
+        <div id="statusDot" class="w-2.5 h-2.5 rounded-full bg-zinc-200"></div>
     </header>
 
-    <main class="max-w-xl mx-auto p-4 space-y-10">
+    <main class="max-w-2xl mx-auto p-5 space-y-10">
         
-        <!-- Login Section -->
-        <section id="authSection" class="bg-zinc-900 p-8 rounded-2xl border border-zinc-800 text-center shadow-2xl">
-            <div class="mb-6 flex justify-center text-gold text-5xl">🔑</div>
-            <h2 class="text-xl font-bold mb-4">Vault gesperrt</h2>
-            <button onclick="handleAuthClick()" class="btn-gold w-full py-4 rounded-xl shadow-lg flex items-center justify-center gap-3">
-                Zutritt mit Google Drive
-            </button>
+        <!-- Login -->
+        <section id="authSection" class="flex flex-col items-center justify-center py-20 space-y-6 fade-up">
+            <div class="relative"><div class="absolute inset-0 bg-gold blur-3xl opacity-10"></div><div class="relative bg-white w-24 h-24 rounded-[2.2rem] flex items-center justify-center text-4xl shadow-xl border border-zinc-100">🔒</div></div>
+            <div class="text-center"><h2 class="text-2xl font-bold tracking-tight">Vault gesperrt</h2><p class="text-zinc-400 text-sm mt-1 font-medium">Authentifizierung erforderlich</p></div>
+            <button onclick="handleAuthClick()" class="btn-apple-gold px-12 py-4 rounded-2xl shadow-lg">Zutritt gewähren</button>
         </section>
 
-        <!-- Upload Form (Hidden) -->
-        <section id="uploadForm" class="hidden space-y-6 animate-in fade-in duration-500">
-            <div class="bg-zinc-900 p-6 rounded-2xl border border-zinc-800 space-y-4">
-                <h2 class="text-gold font-bold uppercase tracking-widest text-sm text-center italic">Neuer Upload</h2>
-                
-                <input type="file" id="videoFile" accept="video/*" class="block w-full text-sm text-zinc-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-zinc-800 file:text-gold hover:file:bg-zinc-700">
-                
-                <input type="text" id="title" placeholder="Video Titel..." class="w-full bg-black border border-zinc-800 p-4 rounded-xl focus:border-gold outline-none text-white">
-                
-                <textarea id="caption" rows="3" placeholder="Beschreibung/Caption..." class="w-full bg-black border border-zinc-800 p-4 rounded-xl focus:border-gold outline-none text-white"></textarea>
+        <!-- Main Content -->
+        <section id="uploadForm" class="hidden space-y-12 fade-up">
+            
+            <!-- Upload Area -->
+            <div class="bg-white rounded-[2.5rem] p-6 space-y-6 border border-zinc-100 shadow-sm">
+                <!-- Tab Switcher Upload -->
+                <div class="bg-[#f2f2f7] p-1 rounded-2xl flex text-[10px] font-bold uppercase tracking-widest text-zinc-400">
+                    <button onclick="switchUploadTab('video')" id="tabUpVideo" class="flex-1 py-3 rounded-xl transition-all tab-active">Fertig</button>
+                    <button onclick="switchUploadTab('raw')" id="tabUpRaw" class="flex-1 py-3 rounded-xl transition-all">Rohdaten</button>
+                    <button onclick="switchUploadTab('sound')" id="tabUpSound" class="flex-1 py-3 rounded-xl transition-all">Sound</button>
+                </div>
 
-                <div id="accountInputs" class="space-y-2">
-                    <div class="flex gap-2">
-                        <select class="account-select flex-1 bg-black border border-zinc-800 rounded-xl p-4 text-white outline-none">
-                            <option>Hauptaccount TikTok</option>
-                            <option>2. Account TikTok</option>
-                            <option>YouTube</option>
-                            <option>Instagram Hauptaccount</option>
-                            <option>Instagram 2. Account</option>
-                        </select>
-                        <button onclick="addAccountField()" class="bg-zinc-800 text-gold px-5 rounded-xl font-bold text-2xl">+</button>
+                <div class="space-y-4">
+                    <div class="relative">
+                        <input type="file" id="videoFile" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onchange="haptics()">
+                        <div class="apple-input rounded-2xl p-6 text-center border-dashed border-2 border-zinc-200">
+                            <span class="text-zinc-500 text-sm font-medium" id="fileNameDisplay">Datei auswählen</span>
+                        </div>
+                    </div>
+                    
+                    <input type="text" id="title" placeholder="Titel" class="apple-input w-full p-4 rounded-2xl outline-none text-sm font-semibold" oninput="haptics()">
+                    <textarea id="caption" rows="2" placeholder="Beschreibung" class="apple-input w-full p-4 rounded-2xl outline-none text-sm font-medium resize-none" oninput="haptics()"></textarea>
+
+                    <div id="accountFieldWrapper" class="space-y-3">
+                        <div id="accountInputs" class="space-y-3">
+                            <div class="flex gap-2">
+                                <select class="account-select flex-1 apple-input rounded-2xl p-4 text-sm font-bold outline-none appearance-none">
+                                    <option>Hauptaccount TikTok</option>
+                                    <option>2. Account TikTok</option>
+                                    <option>YouTube</option>
+                                    <option>Instagram Hauptaccount</option>
+                                    <option>Instagram 2. Account</option>
+                                </select>
+                                <button onclick="addAccountField()" class="bg-zinc-100 text-gold w-14 rounded-2xl font-light text-2xl shadow-sm">+</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button id="uploadBtn" onclick="startUploadProcess()" class="btn-apple-gold w-full py-5 rounded-2xl shadow-md uppercase tracking-[0.2em] text-xs mt-4">Upload starten</button>
+                    
+                    <div id="progressUI" class="hidden pt-4 space-y-3">
+                        <div class="w-full bg-zinc-100 rounded-full h-1.5 overflow-hidden"><div id="progressBar" class="bg-gold h-full transition-all" style="width: 0%"></div></div>
+                        <div class="flex justify-between text-[10px] text-zinc-400 font-bold uppercase tracking-widest"><span id="statusInfo">Verschlüsseln...</span><span id="percentInfo">0%</span></div>
                     </div>
                 </div>
+            </div>
 
-                <button id="uploadBtn" onclick="startUploadProcess()" class="btn-gold w-full py-4 rounded-xl mt-4 shadow-xl uppercase tracking-widest">
-                    Upload starten
-                </button>
+            <!-- Library -->
+            <div class="space-y-6">
+                <div class="flex flex-col gap-4 px-2">
+                    <h2 class="text-2xl font-extrabold tracking-tight">Mediathek</h2>
+                    <!-- Tab Switcher Library -->
+                    <div class="bg-[#f2f2f7] p-1 rounded-2xl flex text-[10px] font-bold uppercase tracking-widest text-zinc-400">
+                        <button onclick="switchLibraryTab('video')" id="tabLibVideo" class="flex-1 py-3 rounded-xl transition-all tab-active">Videos</button>
+                        <button onclick="switchLibraryTab('raw')" id="tabLibRaw" class="flex-1 py-3 rounded-xl transition-all">Rohdaten</button>
+                        <button onclick="switchLibraryTab('sound')" id="tabLibSound" class="flex-1 py-3 rounded-xl transition-all">Sound</button>
+                    </div>
+                </div>
                 
-                <div id="progressUI" class="hidden space-y-2">
-                    <div class="flex justify-between text-xs text-zinc-500 uppercase"><span id="statusInfo">Upload...</span><span id="percentInfo">0%</span></div>
-                    <div class="w-full bg-zinc-800 rounded-full h-1.5"><div id="progressBar" class="bg-gold h-1.5 rounded-full transition-all" style="width: 0%"></div></div>
-                </div>
+                <div id="libraryGrid" class="grid grid-cols-2 gap-4"></div>
             </div>
 
-            <!-- Library Section -->
-            <div class="space-y-4">
-                <div class="flex justify-between items-center px-2 border-l-2 border-gold pl-3">
-                    <h2 id="libraryTitle" class="text-gold font-bold uppercase tracking-widest text-sm italic">Vault Ordner</h2>
-                    <button id="backBtn" onclick="loadLibrary()" class="hidden text-[10px] text-zinc-500 hover:text-white uppercase font-bold tracking-widest">← Zurück</button>
-                </div>
-                <div id="libraryGrid" class="grid grid-cols-2 gap-4">
-                    <!-- Ordner oder Videos laden hier -->
-                </div>
-            </div>
+            <button onclick="handleSignoutClick()" class="w-full py-4 text-zinc-300 text-[10px] font-bold uppercase tracking-[0.4em] hover:text-red-500 transition-colors">Session beenden</button>
         </section>
-
-        <button id="signoutBtn" onclick="handleSignoutClick()" class="hidden w-full text-[10px] text-zinc-700 uppercase tracking-[0.3em] font-bold hover:text-red-500 mt-10 transition-colors italic">Logout / Vault schließen</button>
     </main>
 
-    <!-- Detail Popup (Modal) -->
-    <div id="videoModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/95 backdrop-blur-md animate-in fade-in duration-200">
-        <div class="bg-zinc-900 border border-zinc-800 w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl relative max-h-[90vh] overflow-y-auto shadow-[0_0_50px_rgba(212,175,55,0.1)]">
-            <button onclick="closeModal()" class="absolute top-4 right-4 bg-black/50 text-white w-10 h-10 rounded-full z-10 flex items-center justify-center font-bold border border-zinc-800">✕</button>
-            <div id="modalContent" class="p-6 space-y-6">
-                <!-- Inhalt dynamisch -->
-            </div>
+    <!-- Modal -->
+    <div id="videoModal" class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300">
+        <div class="bg-white border-t sm:border border-zinc-100 w-full max-w-lg rounded-t-[2.5rem] sm:rounded-[3rem] overflow-hidden shadow-2xl relative max-h-[95vh] overflow-y-auto">
+            <div class="w-12 h-1.5 bg-zinc-100 rounded-full mx-auto mt-4 mb-2 sm:hidden"></div>
+            <button onclick="closeModal()" class="absolute top-6 right-6 bg-zinc-100 text-black w-10 h-10 rounded-full z-10 flex items-center justify-center font-light text-xl">✕</button>
+            <div id="modalContent" class="p-8 pt-10 sm:p-10 space-y-8"></div>
         </div>
     </div>
 
     <script>
         const CLIENT_ID = '816126303003-alj4h52nrdsko9u96tiftn4etj228i88.apps.googleusercontent.com';
         const API_KEY = 'AIzaSyCjsxob1ip3TFL42Z-Fc9PPNFQ20iBVMho';
-        const MAIN_FOLDER_NAME = "Video App Uploads";
-        const ACCOUNT_FOLDERS = [
-            "Hauptaccount TikTok",
-            "2. Account TikTok",
-            "YouTube",
-            "Instagram Hauptaccount",
-            "Instagram 2. Account"
-        ];
-        const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+        const MAIN_FOLDER_NAME = "Video App Vault";
+        const CATEGORIES = { video: "Fertige Videos", raw: "Rohmaterial", sound: "Tonaufnahmen" };
+        let currentUploadTab = 'video';
+        let currentLibraryTab = 'video';
         let tokenClient;
 
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW failed', err));
-            });
+        function haptics() { if (window.navigator && window.navigator.vibrate) { window.navigator.vibrate(20); } }
+
+        function switchUploadTab(type) {
+            haptics(); currentUploadTab = type;
+            ['Video', 'Raw', 'Sound'].forEach(t => document.getElementById('tabUp'+t).classList.remove('tab-active'));
+            document.getElementById('tabUp'+type.charAt(0).toUpperCase() + type.slice(1)).classList.add('tab-active');
+            document.getElementById('accountFieldWrapper').style.display = (type === 'video') ? 'block' : 'none';
+            document.getElementById('videoFile').accept = (type === 'sound') ? 'audio/*' : 'video/*';
         }
 
-        function gapiLoaded() { 
-            gapi.load('client', async () => { 
-                await gapi.client.init({ apiKey: API_KEY, discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'] }); 
-                checkExistingAuth();
-            }); 
-        }
-
-        function gisLoaded() { 
-            tokenClient = google.accounts.oauth2.initTokenClient({ 
-                client_id: CLIENT_ID, scope: SCOPES, 
-                callback: (resp) => { if (resp.error !== undefined) return; saveToken(resp.access_token, resp.expires_in); showApp(); } 
-            }); 
-        }
-
-        function saveToken(token, expiresIn) {
-            localStorage.setItem('vault_token', token);
-            localStorage.setItem('vault_token_expiry', Date.now() + (expiresIn * 1000));
-        }
-
-        function checkExistingAuth() {
-            const token = localStorage.getItem('vault_token');
-            const expiry = localStorage.getItem('vault_token_expiry');
-            if (token && expiry && Date.now() < expiry) {
-                gapi.client.setToken({ access_token: token });
-                showApp();
-            }
-        }
-
-        function showApp() {
-            document.getElementById('authSection').classList.add('hidden');
-            document.getElementById('uploadForm').classList.remove('hidden');
-            document.getElementById('signoutBtn').classList.remove('hidden');
+        function switchLibraryTab(type) {
+            haptics(); currentLibraryTab = type;
+            ['Video', 'Raw', 'Sound'].forEach(t => document.getElementById('tabLib'+t).classList.remove('tab-active'));
+            document.getElementById('tabLib'+type.charAt(0).toUpperCase() + type.slice(1)).classList.add('tab-active');
             loadLibrary();
         }
 
-        function handleAuthClick() { tokenClient.requestAccessToken({prompt: 'consent'}); }
-        function handleSignoutClick() { 
-            localStorage.removeItem('vault_token');
-            localStorage.removeItem('vault_token_expiry');
-            location.reload(); 
-        }
+        if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js'); }); }
 
+        document.getElementById('videoFile')?.addEventListener('change', function(e) {
+            haptics();
+            const fileName = e.target.files[0]?.name || "Datei ausgewählt";
+            document.getElementById('fileNameDisplay').innerText = fileName;
+            document.getElementById('fileNameDisplay').style.color = '#D4AF37';
+        });
+
+        function gapiLoaded() { gapi.load('client', async () => { await gapi.client.init({ apiKey: API_KEY, discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'] }); checkExistingAuth(); }); }
+        function gisLoaded() { tokenClient = google.accounts.oauth2.initTokenClient({ client_id: CLIENT_ID, scope: 'https://www.googleapis.com/auth/drive.file', callback: (resp) => { if (resp.error !== undefined) return; saveToken(resp.access_token, resp.expires_in); showApp(); } }); }
+        function saveToken(token, expiresIn) { localStorage.setItem('vault_token', token); localStorage.setItem('vault_token_expiry', Date.now() + (expiresIn * 1000)); }
+        function checkExistingAuth() { const token = localStorage.getItem('vault_token'); const expiry = localStorage.getItem('vault_token_expiry'); if (token && expiry && Date.now() < expiry) { gapi.client.setToken({ access_token: token }); showApp(); } }
+        function showApp() { document.getElementById('authSection').classList.add('hidden'); document.getElementById('uploadForm').classList.remove('hidden'); document.getElementById('statusDot').style.backgroundColor = '#D4AF37'; loadLibrary(); }
+        function handleAuthClick() { haptics(); tokenClient.requestAccessToken({prompt: 'consent'}); }
+        function handleSignoutClick() { haptics(); localStorage.removeItem('vault_token'); localStorage.removeItem('vault_token_expiry'); location.reload(); }
         window.onload = () => { gapiLoaded(); gisLoaded(); };
 
         function addAccountField() {
+            haptics();
             const div = document.createElement('div');
-            div.className = 'flex gap-2 animate-in slide-in-from-left duration-200';
-            div.innerHTML = `
-                <select class="account-select flex-1 bg-black border border-zinc-800 rounded-xl p-4 text-white outline-none">
-                    ${ACCOUNT_FOLDERS.map(f => `<option>${f}</option>`).join('')}
-                </select>
-                <button onclick="this.parentElement.remove()" class="bg-zinc-800 text-red-500 px-5 rounded-xl font-bold text-2xl">-</button>`;
+            div.className = 'flex gap-2 animate-in slide-in-from-left duration-300';
+            div.innerHTML = `<select class="account-select flex-1 apple-input rounded-2xl p-4 text-sm font-bold outline-none appearance-none"><option>Hauptaccount TikTok</option><option>2. Account TikTok</option><option>YouTube</option><option>Instagram Hauptaccount</option><option>Instagram 2. Account</option></select><button onclick="haptics(); this.parentElement.remove()" class="bg-zinc-100 text-red-500 w-14 rounded-2xl font-light text-2xl shadow-sm">-</button>`;
             document.getElementById('accountInputs').appendChild(div);
         }
 
-        async function getOrCreateFolder(name, parentId = null) {
-            let query = `name = '${name}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`;
-            if (parentId) query += ` and '${parentId}' in parents`;
-            const resp = await gapi.client.drive.files.list({ q: query });
+        async function getFolder(name, parentId = null) {
+            let q = `name = '${name}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`;
+            if (parentId) q += ` and '${parentId}' in parents`;
+            const resp = await gapi.client.drive.files.list({ q: q });
             if (resp.result.files.length > 0) return resp.result.files[0].id;
-            
-            const metadata = { name: name, mimeType: 'application/vnd.google-apps.folder' };
-            if (parentId) metadata.parents = [parentId];
-            const folder = await gapi.client.drive.files.create({ resource: metadata, fields: 'id' });
+            const folder = await gapi.client.drive.files.create({ resource: { name: name, mimeType: 'application/vnd.google-apps.folder', parents: parentId ? [parentId] : [] }, fields: 'id' });
             return folder.result.id;
         }
 
         async function startUploadProcess() {
+            haptics();
             const fileInput = document.getElementById('videoFile');
-            if (!fileInput.files[0]) return alert("Video wählen!");
+            if (!fileInput.files[0]) return alert("Bitte Datei wählen!");
             const btn = document.getElementById('uploadBtn');
             const progUI = document.getElementById('progressUI');
             btn.disabled = true; progUI.classList.remove('hidden');
             
             try {
-                const mainId = await getOrCreateFolder(MAIN_FOLDER_NAME);
-                const selectedAccs = Array.from(document.querySelectorAll('.account-select')).map(s => s.value);
-                
-                // IDs aller gewählten Unterordner holen
-                const parentIds = [];
-                for(let acc of selectedAccs) {
-                    const id = await getOrCreateFolder(acc, mainId);
-                    parentIds.push(id);
-                }
-
+                const mainId = await getFolder(MAIN_FOLDER_NAME);
+                const catId = await getFolder(CATEGORIES[currentUploadTab], mainId);
                 const file = fileInput.files[0];
                 const title = document.getElementById('title').value || file.name;
                 const caption = document.getElementById('caption').value;
+                const accs = (currentUploadTab === 'video') ? Array.from(document.querySelectorAll('.account-select')).map(s => s.value).join(', ') : 'N/A';
                 
-                const metadata = { 
-                    name: title, 
-                    mimeType: file.type, 
-                    parents: parentIds, 
-                    description: `CAPTION: ${caption} | ACCOUNTS: ${selectedAccs.join(', ')}` 
-                };
-
+                const metadata = { name: title, mimeType: file.type, parents: [catId], description: `CAPTION: ${caption} | ACCOUNTS: ${accs}` };
                 const form = new FormData();
                 form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
                 form.append('file', file);
@@ -230,135 +257,84 @@
                 const xhr = new XMLHttpRequest();
                 xhr.open('POST', 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart');
                 xhr.setRequestHeader('Authorization', 'Bearer ' + localStorage.getItem('vault_token'));
-                xhr.upload.onprogress = (e) => { 
-                    const p = Math.round((e.loaded / e.total) * 100); 
-                    document.getElementById('progressBar').style.width = p+'%'; 
-                    document.getElementById('percentInfo').innerText = p+'%'; 
-                };
-                xhr.onload = () => { if(xhr.status === 200) { alert("Im Vault gesichert!"); location.reload(); } else { alert("Fehler!"); btn.disabled = false; }};
+                xhr.upload.onprogress = (e) => { const p = Math.round((e.loaded / e.total) * 100); document.getElementById('progressBar').style.width = p+'%'; document.getElementById('percentInfo').innerText = p+'%'; };
+                xhr.onload = () => { if(xhr.status === 200) { haptics(); location.reload(); } else { alert("Fehler!"); btn.disabled = false; }};
                 xhr.send(form);
             } catch (e) { alert("Fehler!"); btn.disabled = false; }
         }
 
         async function loadLibrary() {
             const grid = document.getElementById('libraryGrid');
-            const title = document.getElementById('libraryTitle');
-            const backBtn = document.getElementById('backBtn');
-            title.innerText = "Vault Ordner";
-            backBtn.classList.add('hidden');
-            grid.innerHTML = '<div class="col-span-2 text-center text-zinc-500 animate-pulse py-10 uppercase tracking-widest text-[10px]">Lade Ordnerstruktur...</div>';
-            
+            grid.innerHTML = '<div class="col-span-2 text-center text-zinc-300 py-20 text-[10px] uppercase tracking-widest animate-pulse">Lade Vault...</div>';
             try {
-                const mainId = await getOrCreateFolder(MAIN_FOLDER_NAME);
-                grid.innerHTML = '';
-                
-                for(let folderName of ACCOUNT_FOLDERS) {
-                    const folderId = await getOrCreateFolder(folderName, mainId);
-                    const div = document.createElement('div');
-                    div.className = "bg-zinc-900 border border-zinc-800 rounded-2xl p-6 cursor-pointer hover:border-gold transition-all active:scale-95 text-center flex flex-col items-center gap-3 shadow-lg";
-                    div.onclick = () => loadFolderContent(folderId, folderName);
-                    div.innerHTML = `<span class="text-4xl">📂</span><span class="text-[10px] font-black uppercase tracking-widest text-gold">${folderName}</span>`;
-                    grid.appendChild(div);
-                }
-            } catch (e) { grid.innerHTML = 'Fehler beim Laden.'; }
-        }
-
-        async function loadFolderContent(folderId, folderName) {
-            const grid = document.getElementById('libraryGrid');
-            const title = document.getElementById('libraryTitle');
-            const backBtn = document.getElementById('backBtn');
-            title.innerText = folderName;
-            backBtn.classList.remove('hidden');
-            grid.innerHTML = '<div class="col-span-2 text-center text-zinc-500 animate-pulse py-10 uppercase tracking-widest text-[10px]">Öffne Archiv...</div>';
-
-            try {
-                const resp = await gapi.client.drive.files.list({ 
-                    q: `'${folderId}' in parents and trashed = false`, 
-                    fields: 'files(id, name, description, thumbnailLink, webContentLink)',
-                    orderBy: 'createdTime desc'
-                });
+                const mainId = await getFolder(MAIN_FOLDER_NAME);
+                const catId = await getFolder(CATEGORIES[currentLibraryTab], mainId);
+                const resp = await gapi.client.drive.files.list({ q: `'${catId}' in parents and trashed = false`, fields: 'files(id, name, description, thumbnailLink, webContentLink, mimeType)', orderBy: 'createdTime desc' });
                 const files = resp.result.files;
                 grid.innerHTML = '';
-                if (!files.length) grid.innerHTML = '<div class="col-span-2 text-center text-zinc-600 py-10 uppercase tracking-widest text-[10px]">Dieser Ordner ist leer.</div>';
-                
+                if (!files.length) { grid.innerHTML = '<div class="col-span-2 text-center text-zinc-300 py-20 text-[10px] uppercase tracking-widest">Dieser Bereich ist leer</div>'; return; }
                 files.forEach(f => {
+                    const isAudio = f.mimeType.includes('audio');
                     const div = document.createElement('div');
-                    div.className = "bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden cursor-pointer hover:border-gold transition-all active:scale-95";
-                    div.onclick = () => openModal(f);
+                    div.className = "video-card cursor-pointer active:scale-95";
+                    div.onclick = () => { haptics(); openModal(f); };
                     div.innerHTML = `
-                        <div class="h-32 bg-black flex items-center justify-center relative">
-                            ${f.thumbnailLink ? `<img src="${f.thumbnailLink}" class="w-full h-full object-cover opacity-40">` : ''}
-                            <div class="absolute inset-0 flex items-center justify-center"><span class="text-gold text-2xl opacity-80">▶</span></div>
+                        <div class="h-44 bg-zinc-100 flex items-center justify-center relative">
+                            ${f.thumbnailLink ? `<img src="${f.thumbnailLink.replace('=s220', '=s600')}" class="w-full h-full object-cover">` : ''}
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <div class="w-12 h-12 bg-white/95 rounded-full flex items-center justify-center shadow-lg backdrop-blur">
+                                    <span class="text-gold text-xl">${isAudio ? '🎙️' : '▶'}</span>
+                                </div>
+                            </div>
                         </div>
-                        <div class="p-3 text-[9px] font-bold uppercase truncate text-zinc-400 text-center">${f.name}</div>
+                        <div class="p-4 text-[10px] font-bold uppercase truncate text-black text-center tracking-tight">${f.name}</div>
                     `;
                     grid.appendChild(div);
                 });
-            } catch (e) { grid.innerHTML = 'Fehler.'; }
+            } catch (e) { grid.innerHTML = 'Fehler beim Laden.'; }
         }
 
-        function openModal(f) {
+        async function downloadFile(fileId, fileName, btn) {
+            haptics(); const originalContent = btn.innerHTML; btn.innerHTML = "<span>⏳</span>"; btn.disabled = true;
+            try {
+                const response = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, { headers: { 'Authorization': 'Bearer ' + localStorage.getItem('vault_token') } });
+                const blob = await response.blob(); const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a'); a.href = url; a.download = fileName; document.body.appendChild(a); a.click();
+                window.URL.revokeObjectURL(url); btn.innerHTML = originalContent; btn.disabled = false; haptics();
+            } catch (e) { alert("Fehler!"); btn.innerHTML = originalContent; btn.disabled = false; }
+        }
+
+        async function openModal(f) {
             const modal = document.getElementById('videoModal');
             const content = document.getElementById('modalContent');
             const desc = f.description || "";
             const caption = desc.split('|')[0]?.replace('CAPTION:', '').trim() || "Keine Beschreibung";
-            const accounts = desc.split('|')[1]?.replace('ACCOUNTS:', '').trim() || "Keine Auswahl";
+            const accounts = desc.split('|')[1]?.replace('ACCOUNTS:', '').trim() || "N/A";
 
             content.innerHTML = `
-                <div class="space-y-6">
-                    <h3 class="text-gold font-black text-2xl uppercase tracking-tighter italic text-center border-b border-zinc-800 pb-4 tracking-[0.2em]">Goldstück Details</h3>
-                    
-                    <div class="space-y-2">
-                        <label class="text-[10px] text-zinc-500 uppercase font-black tracking-widest">Titel</label>
-                        <div class="flex gap-2">
-                            <div class="flex-1 bg-black p-4 rounded-xl text-sm text-white border border-zinc-800 font-medium">${f.name}</div>
-                            <button onclick="copyToClipboard('${f.name.replace(/'/g, "\\'")}', this)" class="bg-zinc-800 text-gold px-4 rounded-xl text-[10px] font-black uppercase">Copy</button>
-                        </div>
+                <div class="space-y-8 animate-in slide-in-from-bottom-5 duration-500">
+                    <div class="text-center"><h3 class="text-gold font-black text-2xl uppercase tracking-tighter italic">Details</h3></div>
+                    <div class="space-y-6">
+                        <div class="space-y-2"><label class="text-[10px] text-zinc-400 uppercase font-black tracking-widest pl-1">Titel</label>
+                        <div class="flex gap-2"><div class="flex-1 apple-input p-5 rounded-2xl text-sm text-black font-bold">${f.name}</div>
+                        <button onclick="haptics(); copyToClipboard('${f.name.replace(/'/g, "\\'")}', this)" class="bg-zinc-100 text-gold px-6 rounded-2xl text-[10px] font-black uppercase">Copy</button></div></div>
+                        <div class="space-y-2"><label class="text-[10px] text-zinc-400 uppercase font-black tracking-widest pl-1">Caption</label>
+                        <div class="flex gap-2"><div class="flex-1 apple-input p-5 rounded-2xl text-sm text-zinc-600 leading-relaxed">${caption}</div>
+                        <button onclick="haptics(); copyToClipboard('${caption.replace(/'/g, "\\'").replace(/\n/g, "\\n")}', this)" class="bg-zinc-100 text-gold px-6 rounded-2xl text-[10px] font-black uppercase">Copy</button></div></div>
+                        ${accounts !== 'N/A' ? `<div class="space-y-2 text-center"><label class="text-[10px] text-zinc-400 uppercase font-black tracking-widest">Accounts</label>
+                        <div class="bg-zinc-50 p-5 rounded-3xl flex flex-wrap gap-2 justify-center border border-zinc-100 mt-2">${accounts.split(',').map(a => `<span class="bg-gold/10 text-gold border border-gold/5 px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-tighter">${a.trim()}</span>`).join('')}</div></div>` : ''}
                     </div>
-
-                    <div class="space-y-2">
-                        <label class="text-[10px] text-zinc-500 uppercase font-black tracking-widest">Caption</label>
-                        <div class="flex gap-2">
-                            <div class="flex-1 bg-black p-4 rounded-xl text-sm text-zinc-300 border border-zinc-800 leading-relaxed">${caption}</div>
-                            <button onclick="copyToClipboard('${caption.replace(/'/g, "\\'").replace(/\n/g, "\\n")}', this)" class="bg-zinc-800 text-gold px-4 rounded-xl text-[10px] font-black uppercase">Copy</button>
-                        </div>
+                    <div class="pt-6 flex flex-col gap-4 safe-area-inset">
+                        <button onclick="downloadFile('${f.id}', '${f.name}', this)" class="btn-apple-gold w-full py-5 rounded-2xl shadow-md uppercase tracking-widest text-xs flex items-center justify-center gap-3"><span>⬇</span> Download</button>
+                        <button onclick="haptics(); deleteVideo('${f.id}')" class="text-zinc-300 text-[10px] font-bold uppercase tracking-[0.3em] py-4 hover:text-red-500 transition">Eintrag löschen</button>
                     </div>
-
-                    <div class="space-y-2">
-                        <label class="text-[10px] text-zinc-500 uppercase font-black tracking-widest">Accounts</label>
-                        <div class="bg-zinc-950 p-4 rounded-xl border border-zinc-800 flex flex-wrap gap-2">
-                            ${accounts.split(',').map(a => `<span class="bg-gold/10 text-gold border border-gold/30 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-tighter">${a.trim()}</span>`).join('')}
-                        </div>
-                    </div>
-
-                    <div class="pt-6 flex flex-col gap-4">
-                        <a href="${f.webContentLink}" target="_blank" class="btn-gold w-full py-4 rounded-2xl text-center shadow-lg uppercase tracking-widest text-sm flex items-center justify-center gap-2 italic"><span>⬇</span> Download Video</a>
-                        <button onclick="deleteVideo('${f.id}')" class="text-red-900 text-[10px] font-bold uppercase tracking-[0.3em] py-2 hover:text-red-600 transition tracking-tighter italic">[ Video aus Vault vernichten ]</button>
-                    </div>
-                </div>
-            `;
-            modal.classList.remove('hidden');
-            document.body.style.overflow = 'hidden';
+                </div>`;
+            modal.classList.remove('hidden'); document.body.style.overflow = 'hidden';
         }
 
-        function closeModal() { document.getElementById('videoModal').classList.add('hidden'); document.body.style.overflow = 'auto'; }
-
-        function copyToClipboard(text, btn) {
-            navigator.clipboard.writeText(text).then(() => {
-                const oldText = btn.innerText;
-                btn.innerText = "COPIED";
-                btn.classList.add('text-white');
-                setTimeout(() => { btn.innerText = oldText; btn.classList.remove('text-white'); }, 1500);
-            });
-        }
-
-        async function deleteVideo(id) {
-            if(confirm("Video wirklich überall löschen?")) {
-                await gapi.client.drive.files.delete({ fileId: id });
-                closeModal();
-                loadLibrary();
-            }
-        }
+        function closeModal() { haptics(); document.getElementById('videoModal').classList.add('hidden'); document.body.style.overflow = 'auto'; }
+        function copyToClipboard(text, btn) { navigator.clipboard.writeText(text).then(() => { const oldText = btn.innerText; btn.innerText = "OK"; btn.style.color = "#000"; setTimeout(() => { btn.innerText = oldText; btn.style.color = "#D4AF37"; }, 1500); }); }
+        async function deleteVideo(id) { haptics(); if(confirm("Endgültig aus dem Vault entfernen?")) { await gapi.client.drive.files.delete({ fileId: id }); closeModal(); loadLibrary(); } }
     </script>
 </body>
 </html>
