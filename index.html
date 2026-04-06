@@ -51,7 +51,7 @@
         <!-- Upload Form (Hidden) -->
         <section id="uploadForm" class="hidden space-y-6 animate-in fade-in duration-500">
             <div class="bg-zinc-900 p-6 rounded-2xl border border-zinc-800 space-y-4">
-                <h2 class="text-gold font-bold uppercase tracking-widest text-sm text-center">Neuer Upload</h2>
+                <h2 class="text-gold font-bold uppercase tracking-widest text-sm text-center italic">Neuer Upload</h2>
                 
                 <input type="file" id="videoFile" accept="video/*" class="block w-full text-sm text-zinc-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-zinc-800 file:text-gold hover:file:bg-zinc-700">
                 
@@ -62,11 +62,11 @@
                 <div id="accountInputs" class="space-y-2">
                     <div class="flex gap-2">
                         <select class="account-select flex-1 bg-black border border-zinc-800 rounded-xl p-4 text-white outline-none">
-                            <option>Hauptaccount</option>
-                            <option>2. Account</option>
+                            <option>Hauptaccount TikTok</option>
+                            <option>2. Account TikTok</option>
                             <option>YouTube</option>
-                            <option>Instagram Acc 1</option>
-                            <option>Instagram Acc 2</option>
+                            <option>Instagram Hauptaccount</option>
+                            <option>Instagram 2. Account</option>
                         </select>
                         <button onclick="addAccountField()" class="bg-zinc-800 text-gold px-5 rounded-xl font-bold text-2xl">+</button>
                     </div>
@@ -85,16 +85,16 @@
             <!-- Library Section -->
             <div class="space-y-4">
                 <div class="flex justify-between items-center px-2 border-l-2 border-gold pl-3">
-                    <h2 class="text-gold font-bold uppercase tracking-widest text-sm italic">Deine Mediathek</h2>
-                    <button onclick="loadLibrary()" class="text-[10px] text-zinc-500 hover:text-white uppercase font-bold tracking-widest">Refresh</button>
+                    <h2 id="libraryTitle" class="text-gold font-bold uppercase tracking-widest text-sm italic">Vault Ordner</h2>
+                    <button id="backBtn" onclick="loadLibrary()" class="hidden text-[10px] text-zinc-500 hover:text-white uppercase font-bold tracking-widest">← Zurück</button>
                 </div>
                 <div id="libraryGrid" class="grid grid-cols-2 gap-4">
-                    <div class="col-span-2 text-center py-10 text-zinc-600 italic tracking-widest">Lade Vault-Inhalte...</div>
+                    <!-- Ordner oder Videos laden hier -->
                 </div>
             </div>
         </section>
 
-        <button id="signoutBtn" onclick="handleSignoutClick()" class="hidden w-full text-[10px] text-zinc-700 uppercase tracking-[0.3em] font-bold hover:text-red-500 mt-10 transition-colors">Logout / Vault schließen</button>
+        <button id="signoutBtn" onclick="handleSignoutClick()" class="hidden w-full text-[10px] text-zinc-700 uppercase tracking-[0.3em] font-bold hover:text-red-500 mt-10 transition-colors italic">Logout / Vault schließen</button>
     </main>
 
     <!-- Detail Popup (Modal) -->
@@ -110,39 +110,37 @@
     <script>
         const CLIENT_ID = '816126303003-alj4h52nrdsko9u96tiftn4etj228i88.apps.googleusercontent.com';
         const API_KEY = 'AIzaSyCjsxob1ip3TFL42Z-Fc9PPNFQ20iBVMho';
-        const FOLDER_NAME = "Video App Uploads";
+        const MAIN_FOLDER_NAME = "Video App Uploads";
+        const ACCOUNT_FOLDERS = [
+            "Hauptaccount TikTok",
+            "2. Account TikTok",
+            "YouTube",
+            "Instagram Hauptaccount",
+            "Instagram 2. Account"
+        ];
         const SCOPES = 'https://www.googleapis.com/auth/drive.file';
         let tokenClient;
 
-        // Service Worker für PWA
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW failed', err));
             });
         }
 
-        // Init Google GAPI
         function gapiLoaded() { 
             gapi.load('client', async () => { 
                 await gapi.client.init({ apiKey: API_KEY, discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'] }); 
-                checkExistingAuth(); // Nach GAPI Init prüfen, ob Token vorhanden
+                checkExistingAuth();
             }); 
         }
 
-        // Init Google GIS
         function gisLoaded() { 
             tokenClient = google.accounts.oauth2.initTokenClient({ 
-                client_id: CLIENT_ID, 
-                scope: SCOPES, 
-                callback: (resp) => { 
-                    if (resp.error !== undefined) return;
-                    saveToken(resp.access_token, resp.expires_in);
-                    showApp();
-                } 
+                client_id: CLIENT_ID, scope: SCOPES, 
+                callback: (resp) => { if (resp.error !== undefined) return; saveToken(resp.access_token, resp.expires_in); showApp(); } 
             }); 
         }
 
-        // --- AUTH LOGIC ---
         function saveToken(token, expiresIn) {
             localStorage.setItem('vault_token', token);
             localStorage.setItem('vault_token_expiry', Date.now() + (expiresIn * 1000));
@@ -151,7 +149,6 @@
         function checkExistingAuth() {
             const token = localStorage.getItem('vault_token');
             const expiry = localStorage.getItem('vault_token_expiry');
-
             if (token && expiry && Date.now() < expiry) {
                 gapi.client.setToken({ access_token: token });
                 showApp();
@@ -165,39 +162,36 @@
             loadLibrary();
         }
 
-        function handleAuthClick() { 
-            tokenClient.requestAccessToken({prompt: 'consent'}); 
-        }
-
+        function handleAuthClick() { tokenClient.requestAccessToken({prompt: 'consent'}); }
         function handleSignoutClick() { 
-            const token = localStorage.getItem('vault_token');
-            if (token) {
-                google.accounts.oauth2.revoke(token);
-                localStorage.removeItem('vault_token');
-                localStorage.removeItem('vault_token_expiry');
-                location.reload();
-            }
+            localStorage.removeItem('vault_token');
+            localStorage.removeItem('vault_token_expiry');
+            location.reload(); 
         }
 
         window.onload = () => { gapiLoaded(); gisLoaded(); };
 
-        // --- APP LOGIC ---
         function addAccountField() {
             const div = document.createElement('div');
             div.className = 'flex gap-2 animate-in slide-in-from-left duration-200';
-            div.innerHTML = `<select class="account-select flex-1 bg-black border border-zinc-800 rounded-xl p-4 text-white"><option>Hauptaccount</option><option>2. Account</option><option>YouTube</option><option>Instagram Acc 1</option><option>Instagram Acc 2</option></select><button onclick="this.parentElement.remove()" class="bg-zinc-800 text-red-500 px-5 rounded-xl font-bold text-2xl">-</button>`;
+            div.innerHTML = `
+                <select class="account-select flex-1 bg-black border border-zinc-800 rounded-xl p-4 text-white outline-none">
+                    ${ACCOUNT_FOLDERS.map(f => `<option>${f}</option>`).join('')}
+                </select>
+                <button onclick="this.parentElement.remove()" class="bg-zinc-800 text-red-500 px-5 rounded-xl font-bold text-2xl">-</button>`;
             document.getElementById('accountInputs').appendChild(div);
         }
 
-        async function getFolderId() {
-            try {
-                const resp = await gapi.client.drive.files.list({ q: `name = '${FOLDER_NAME}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false` });
-                if (resp.result.files.length > 0) return resp.result.files[0].id;
-                const folder = await gapi.client.drive.files.create({ resource: { name: FOLDER_NAME, mimeType: 'application/vnd.google-apps.folder' }, fields: 'id' });
-                return folder.result.id;
-            } catch (e) {
-                if(e.status === 401) { handleSignoutClick(); } // Token abgelaufen
-            }
+        async function getOrCreateFolder(name, parentId = null) {
+            let query = `name = '${name}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`;
+            if (parentId) query += ` and '${parentId}' in parents`;
+            const resp = await gapi.client.drive.files.list({ q: query });
+            if (resp.result.files.length > 0) return resp.result.files[0].id;
+            
+            const metadata = { name: name, mimeType: 'application/vnd.google-apps.folder' };
+            if (parentId) metadata.parents = [parentId];
+            const folder = await gapi.client.drive.files.create({ resource: metadata, fields: 'id' });
+            return folder.result.id;
         }
 
         async function startUploadProcess() {
@@ -208,13 +202,27 @@
             btn.disabled = true; progUI.classList.remove('hidden');
             
             try {
-                const folderId = await getFolderId();
+                const mainId = await getOrCreateFolder(MAIN_FOLDER_NAME);
+                const selectedAccs = Array.from(document.querySelectorAll('.account-select')).map(s => s.value);
+                
+                // IDs aller gewählten Unterordner holen
+                const parentIds = [];
+                for(let acc of selectedAccs) {
+                    const id = await getOrCreateFolder(acc, mainId);
+                    parentIds.push(id);
+                }
+
                 const file = fileInput.files[0];
                 const title = document.getElementById('title').value || file.name;
                 const caption = document.getElementById('caption').value;
-                const accs = Array.from(document.querySelectorAll('.account-select')).map(s => s.value).join(', ');
                 
-                const metadata = { name: title, mimeType: file.type, parents: [folderId], description: `CAPTION: ${caption} | ACCOUNTS: ${accs}` };
+                const metadata = { 
+                    name: title, 
+                    mimeType: file.type, 
+                    parents: parentIds, 
+                    description: `CAPTION: ${caption} | ACCOUNTS: ${selectedAccs.join(', ')}` 
+                };
+
                 const form = new FormData();
                 form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
                 form.append('file', file);
@@ -227,27 +235,52 @@
                     document.getElementById('progressBar').style.width = p+'%'; 
                     document.getElementById('percentInfo').innerText = p+'%'; 
                 };
-                xhr.onload = () => { 
-                    if(xhr.status === 200) { alert("Goldstück im Vault gesichert!"); location.reload(); }
-                    else { alert("Fehler beim Upload. Bitte neu einloggen."); handleSignoutClick(); }
-                };
+                xhr.onload = () => { if(xhr.status === 200) { alert("Im Vault gesichert!"); location.reload(); } else { alert("Fehler!"); btn.disabled = false; }};
                 xhr.send(form);
             } catch (e) { alert("Fehler!"); btn.disabled = false; }
         }
 
         async function loadLibrary() {
             const grid = document.getElementById('libraryGrid');
-            grid.innerHTML = '<div class="col-span-2 text-center text-zinc-500 animate-pulse py-10 uppercase tracking-widest text-[10px]">Öffne Vault...</div>';
+            const title = document.getElementById('libraryTitle');
+            const backBtn = document.getElementById('backBtn');
+            title.innerText = "Vault Ordner";
+            backBtn.classList.add('hidden');
+            grid.innerHTML = '<div class="col-span-2 text-center text-zinc-500 animate-pulse py-10 uppercase tracking-widest text-[10px]">Lade Ordnerstruktur...</div>';
+            
             try {
-                const folderId = await getFolderId();
+                const mainId = await getOrCreateFolder(MAIN_FOLDER_NAME);
+                grid.innerHTML = '';
+                
+                for(let folderName of ACCOUNT_FOLDERS) {
+                    const folderId = await getOrCreateFolder(folderName, mainId);
+                    const div = document.createElement('div');
+                    div.className = "bg-zinc-900 border border-zinc-800 rounded-2xl p-6 cursor-pointer hover:border-gold transition-all active:scale-95 text-center flex flex-col items-center gap-3 shadow-lg";
+                    div.onclick = () => loadFolderContent(folderId, folderName);
+                    div.innerHTML = `<span class="text-4xl">📂</span><span class="text-[10px] font-black uppercase tracking-widest text-gold">${folderName}</span>`;
+                    grid.appendChild(div);
+                }
+            } catch (e) { grid.innerHTML = 'Fehler beim Laden.'; }
+        }
+
+        async function loadFolderContent(folderId, folderName) {
+            const grid = document.getElementById('libraryGrid');
+            const title = document.getElementById('libraryTitle');
+            const backBtn = document.getElementById('backBtn');
+            title.innerText = folderName;
+            backBtn.classList.remove('hidden');
+            grid.innerHTML = '<div class="col-span-2 text-center text-zinc-500 animate-pulse py-10 uppercase tracking-widest text-[10px]">Öffne Archiv...</div>';
+
+            try {
                 const resp = await gapi.client.drive.files.list({ 
                     q: `'${folderId}' in parents and trashed = false`, 
-                    fields: 'files(id, name, description, thumbnailLink, createdTime, webContentLink)',
+                    fields: 'files(id, name, description, thumbnailLink, webContentLink)',
                     orderBy: 'createdTime desc'
                 });
                 const files = resp.result.files;
                 grid.innerHTML = '';
-                if (!files.length) grid.innerHTML = '<div class="col-span-2 text-center text-zinc-600 py-10 uppercase tracking-widest text-[10px]">Vault leer.</div>';
+                if (!files.length) grid.innerHTML = '<div class="col-span-2 text-center text-zinc-600 py-10 uppercase tracking-widest text-[10px]">Dieser Ordner ist leer.</div>';
+                
                 files.forEach(f => {
                     const div = document.createElement('div');
                     div.className = "bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden cursor-pointer hover:border-gold transition-all active:scale-95";
@@ -255,25 +288,25 @@
                     div.innerHTML = `
                         <div class="h-32 bg-black flex items-center justify-center relative">
                             ${f.thumbnailLink ? `<img src="${f.thumbnailLink}" class="w-full h-full object-cover opacity-40">` : ''}
-                            <div class="absolute inset-0 flex items-center justify-center bg-black/20"><span class="text-gold text-3xl opacity-80 hover:opacity-100">▶</span></div>
+                            <div class="absolute inset-0 flex items-center justify-center"><span class="text-gold text-2xl opacity-80">▶</span></div>
                         </div>
-                        <div class="p-3 text-[10px] font-bold uppercase truncate text-zinc-400 text-center tracking-tighter">${f.name}</div>
+                        <div class="p-3 text-[9px] font-bold uppercase truncate text-zinc-400 text-center">${f.name}</div>
                     `;
                     grid.appendChild(div);
                 });
-            } catch (e) { grid.innerHTML = 'Vault Fehler.'; }
+            } catch (e) { grid.innerHTML = 'Fehler.'; }
         }
 
         function openModal(f) {
             const modal = document.getElementById('videoModal');
             const content = document.getElementById('modalContent');
             const desc = f.description || "";
-            const caption = desc.split('|')[0]?.replace('CAPTION:', '').trim() || "";
+            const caption = desc.split('|')[0]?.replace('CAPTION:', '').trim() || "Keine Beschreibung";
             const accounts = desc.split('|')[1]?.replace('ACCOUNTS:', '').trim() || "Keine Auswahl";
 
             content.innerHTML = `
                 <div class="space-y-6">
-                    <h3 class="text-gold font-black text-2xl uppercase tracking-tighter italic text-center border-b border-zinc-800 pb-4">Vault Details</h3>
+                    <h3 class="text-gold font-black text-2xl uppercase tracking-tighter italic text-center border-b border-zinc-800 pb-4 tracking-[0.2em]">Goldstück Details</h3>
                     
                     <div class="space-y-2">
                         <label class="text-[10px] text-zinc-500 uppercase font-black tracking-widest">Titel</label>
@@ -299,8 +332,8 @@
                     </div>
 
                     <div class="pt-6 flex flex-col gap-4">
-                        <a href="${f.webContentLink}" target="_blank" class="btn-gold w-full py-4 rounded-2xl text-center shadow-lg uppercase tracking-widest text-sm">⬇ Video Download</a>
-                        <button onclick="deleteVideo('${f.id}')" class="text-red-900 text-[10px] font-bold uppercase tracking-[0.2em] py-2 hover:text-red-600 transition">[ Löschen ]</button>
+                        <a href="${f.webContentLink}" target="_blank" class="btn-gold w-full py-4 rounded-2xl text-center shadow-lg uppercase tracking-widest text-sm flex items-center justify-center gap-2 italic"><span>⬇</span> Download Video</a>
+                        <button onclick="deleteVideo('${f.id}')" class="text-red-900 text-[10px] font-bold uppercase tracking-[0.3em] py-2 hover:text-red-600 transition tracking-tighter italic">[ Video aus Vault vernichten ]</button>
                     </div>
                 </div>
             `;
@@ -313,14 +346,14 @@
         function copyToClipboard(text, btn) {
             navigator.clipboard.writeText(text).then(() => {
                 const oldText = btn.innerText;
-                btn.innerText = "OK";
+                btn.innerText = "COPIED";
                 btn.classList.add('text-white');
                 setTimeout(() => { btn.innerText = oldText; btn.classList.remove('text-white'); }, 1500);
             });
         }
 
         async function deleteVideo(id) {
-            if(confirm("Video wirklich vernichten?")) {
+            if(confirm("Video wirklich überall löschen?")) {
                 await gapi.client.drive.files.delete({ fileId: id });
                 closeModal();
                 loadLibrary();
