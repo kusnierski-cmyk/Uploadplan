@@ -3,239 +3,241 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Drive Video Manager</title>
+    <title>Chef Video Vault</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Identity Services & API Client -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://apis.google.com/js/api.js" async defer></script>
+    <style>
+        :root { --gold: #D4AF37; --gold-hover: #B8860B; }
+        .bg-gold { background-color: var(--gold); }
+        .text-gold { color: var(--gold); }
+        .border-gold { border-color: var(--gold); }
+        .gold-gradient { background: linear-gradient(135deg, #D4AF37 0%, #F5E050 50%, #B8860B 100%); }
+        .btn-gold { background: var(--gold); color: black; font-weight: bold; transition: all 0.3s; }
+        .btn-gold:hover { background: var(--gold-hover); transform: translateY(-2px); }
+        body { background-color: #000; color: #fff; font-family: 'Inter', sans-serif; }
+    </style>
 </head>
-<body class="bg-gray-50 min-h-screen pb-10">
+<body class="min-h-screen pb-20">
 
-    <header class="bg-blue-700 text-white p-4 shadow-lg sticky top-0 z-20">
-        <h1 class="text-xl font-bold text-center italic">Chef Video Uploader</h1>
+    <!-- Header -->
+    <header class="border-b border-zinc-800 p-6 bg-zinc-950 sticky top-0 z-30">
+        <h1 class="text-2xl font-black text-center tracking-tighter uppercase italic">
+            Chef <span class="text-gold">Video Vault</span>
+        </h1>
     </header>
 
-    <main class="max-w-md mx-auto p-4 space-y-6">
+    <main class="max-w-xl mx-auto p-4 space-y-10">
         
-        <!-- Auth Section -->
-        <section id="authSection" class="bg-white p-6 rounded-xl shadow-sm text-center border border-gray-200">
-            <p class="mb-4 text-gray-600">Verbindung mit Google Drive herstellen:</p>
-            <button id="authBtn" onclick="handleAuthClick()" class="bg-white border border-gray-300 flex items-center justify-center gap-2 w-full py-3 rounded-lg font-bold hover:bg-gray-50 shadow-sm transition">
-                <img src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png" class="w-6" alt="">
-                Mit Google anmelden
+        <!-- Login Section -->
+        <section id="authSection" class="bg-zinc-900 p-8 rounded-2xl border border-zinc-800 text-center shadow-2xl">
+            <div class="mb-6 flex justify-center text-gold text-5xl">🔑</div>
+            <h2 class="text-xl font-bold mb-4">Willkommen im Vault</h2>
+            <button onclick="handleAuthClick()" class="btn-gold w-full py-4 rounded-xl shadow-lg flex items-center justify-center gap-3">
+                Zutritt mit Google Drive
             </button>
-            <button id="signoutBtn" onclick="handleSignoutClick()" class="hidden w-full text-sm text-red-500 mt-4 underline">Abmelden</button>
         </section>
 
-        <!-- Upload Form (Hidden until Auth) -->
-        <section id="uploadForm" class="hidden bg-white p-5 rounded-xl shadow-md border border-gray-100 space-y-5">
-            <h2 class="text-lg font-bold text-gray-800 border-b pb-2">Neuer Upload</h2>
-            
-            <div>
-                <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Video Datei</label>
-                <input type="file" id="videoFile" accept="video/*" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
-            </div>
+        <!-- Upload Form (Hidden) -->
+        <section id="uploadForm" class="hidden space-y-6 animate-in fade-in duration-500">
+            <div class="bg-zinc-900 p-6 rounded-2xl border border-zinc-800 space-y-4">
+                <h2 class="text-gold font-bold uppercase tracking-widest text-sm">Neuer Upload</h2>
+                
+                <input type="file" id="videoFile" accept="video/*" class="block w-full text-sm text-zinc-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-zinc-800 file:text-gold hover:file:bg-zinc-700">
+                
+                <input type="text" id="title" placeholder="Titel eingeben..." class="w-full bg-black border border-zinc-800 p-4 rounded-xl focus:border-gold outline-none text-white">
+                
+                <textarea id="caption" rows="3" placeholder="Caption schreiben..." class="w-full bg-black border border-zinc-800 p-4 rounded-xl focus:border-gold outline-none text-white"></textarea>
 
-            <div>
-                <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Titel</label>
-                <input type="text" id="title" placeholder="z.B. Urlaub 2024" class="w-full border p-3 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none">
-            </div>
-            
-            <div>
-                <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Caption / Beschreibung</label>
-                <textarea id="caption" rows="3" placeholder="Schreibe etwas dazu..." class="w-full border p-3 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none"></textarea>
-            </div>
-
-            <div id="accountsWrapper">
-                <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Ziel-Accounts (Mehrfachauswahl)</label>
                 <div id="accountInputs" class="space-y-2">
                     <div class="flex gap-2">
-                        <select class="account-select flex-1 bg-gray-50 border rounded-lg p-3 outline-none focus:ring-2 focus:ring-blue-500">
+                        <select class="account-select flex-1 bg-black border border-zinc-800 rounded-xl p-4 text-white outline-none">
                             <option>Hauptaccount</option>
                             <option>2. Account</option>
                             <option>YouTube</option>
                             <option>Instagram Acc 1</option>
                             <option>Instagram Acc 2</option>
                         </select>
-                        <button onclick="addAccountField()" class="bg-green-500 text-white px-4 rounded-lg font-bold text-xl">+</button>
+                        <button onclick="addAccountField()" class="bg-zinc-800 text-gold px-5 rounded-xl font-bold text-2xl">+</button>
                     </div>
+                </div>
+
+                <button id="uploadBtn" onclick="startUploadProcess()" class="btn-gold w-full py-4 rounded-xl mt-4 shadow-xl uppercase tracking-widest">
+                    Upload starten
+                </button>
+                
+                <div id="progressUI" class="hidden space-y-2">
+                    <div class="flex justify-between text-xs text-zinc-500 uppercase"><span id="statusInfo">Upload...</span><span id="percentInfo">0%</span></div>
+                    <div class="w-full bg-zinc-800 rounded-full h-1.5"><div id="progressBar" class="bg-gold h-1.5 rounded-full transition-all" style="width: 0%"></div></div>
                 </div>
             </div>
 
-            <button id="uploadBtn" onclick="startUploadProcess()" class="w-full bg-blue-600 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-blue-700 active:scale-95 transition-all">
-                In Drive Ordner speichern
-            </button>
-            
-            <!-- Progress UI -->
-            <div id="statusInfo" class="hidden text-center text-sm font-medium text-blue-600 animate-pulse">
-                Ordner wird gesucht/erstellt...
-            </div>
-            <div id="progressContainer" class="hidden w-full bg-gray-200 rounded-full h-3">
-                <div id="progressBar" class="bg-blue-600 h-3 rounded-full transition-all duration-300" style="width: 0%"></div>
+            <!-- Library Section -->
+            <div class="space-y-4">
+                <div class="flex justify-between items-center px-2">
+                    <h2 class="text-gold font-bold uppercase tracking-widest text-sm">Deine Bibliothek</h2>
+                    <button onclick="loadLibrary()" class="text-xs text-zinc-500 hover:text-white underline">Aktualisieren</button>
+                </div>
+                <div id="libraryGrid" class="grid grid-cols-2 gap-4">
+                    <!-- Videos laden hier -->
+                    <div class="col-span-2 text-center py-10 text-zinc-600 italic">Lade Bibliothek...</div>
+                </div>
             </div>
         </section>
 
-        <p id="footerInfo" class="text-[10px] text-gray-400 text-center uppercase tracking-widest leading-relaxed">
-            Deine Videos werden im Ordner <br><b>"Video App Uploads"</b> auf Google Drive gespeichert.
-        </p>
+        <button id="signoutBtn" onclick="handleSignoutClick()" class="hidden w-full text-xs text-zinc-600 uppercase tracking-widest hover:text-red-500">Abmelden</button>
     </main>
 
+    <!-- Detail Popup (Modal) -->
+    <div id="videoModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm animate-in fade-in duration-200">
+        <div class="bg-zinc-900 border border-zinc-800 w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl relative">
+            <button onclick="closeModal()" class="absolute top-4 right-4 bg-black/50 text-white w-10 h-10 rounded-full z-10">✕</button>
+            <div id="modalContent" class="p-6 space-y-6">
+                <!-- Inhalt dynamisch -->
+            </div>
+        </div>
+    </div>
+
     <script>
-        /* --- KONFIGURATION --- */
         const CLIENT_ID = '816126303003-alj4h52nrdsko9u96tiftn4etj228i88.apps.googleusercontent.com';
         const API_KEY = 'AIzaSyCjsxob1ip3TFL42Z-Fc9PPNFQ20iBVMho';
         const FOLDER_NAME = "Video App Uploads";
-        const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest';
         const SCOPES = 'https://www.googleapis.com/auth/drive.file';
-
         let tokenClient;
-        let gapiInited = false;
-        let gisInited = false;
 
-        // Initialize GAPI
-        function gapiLoaded() {
-            gapi.load('client', async () => {
-                await gapi.client.init({ apiKey: API_KEY, discoveryDocs: [DISCOVERY_DOC] });
-                gapiInited = true;
-            });
-        }
-
-        // Initialize Google Identity Services
-        function gisLoaded() {
-            tokenClient = google.accounts.oauth2.initTokenClient({
-                client_id: CLIENT_ID,
-                scope: SCOPES,
-                callback: '', // defined later
-            });
-            gisInited = true;
-        }
-
+        // Init Google
+        function gapiLoaded() { gapi.load('client', async () => { await gapi.client.init({ apiKey: API_KEY, discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'] }); }); }
+        function gisLoaded() { tokenClient = google.accounts.oauth2.initTokenClient({ client_id: CLIENT_ID, scope: SCOPES, callback: (resp) => { if (resp.error !== undefined) return; document.getElementById('authSection').classList.add('hidden'); document.getElementById('uploadForm').classList.remove('hidden'); document.getElementById('signoutBtn').classList.remove('hidden'); loadLibrary(); } }); }
         window.onload = () => { gapiLoaded(); gisLoaded(); };
 
-        function handleAuthClick() {
-            tokenClient.callback = async (resp) => {
-                if (resp.error !== undefined) throw (resp);
-                document.getElementById('authSection').classList.add('hidden');
-                document.getElementById('uploadForm').classList.remove('hidden');
-                document.getElementById('signoutBtn').classList.remove('hidden');
-            };
-            tokenClient.requestAccessToken({prompt: 'consent'});
-        }
-
-        function handleSignoutClick() {
-            const token = gapi.client.getToken();
-            if (token !== null) {
-                google.accounts.oauth2.revoke(token.access_token);
-                gapi.client.setToken('');
-                location.reload();
-            }
-        }
+        function handleAuthClick() { tokenClient.requestAccessToken({prompt: 'consent'}); }
+        function handleSignoutClick() { const token = gapi.client.getToken(); if (token !== null) { google.accounts.oauth2.revoke(token.access_token); gapi.client.setToken(''); location.reload(); } }
 
         function addAccountField() {
-            const container = document.getElementById('accountInputs');
             const div = document.createElement('div');
-            div.className = 'flex gap-2 animate-in slide-in-from-left duration-200';
-            div.innerHTML = `
-                <select class="account-select flex-1 bg-gray-50 border rounded-lg p-3">
-                    <option>Hauptaccount</option>
-                    <option>2. Account</option>
-                    <option>YouTube</option>
-                    <option>Instagram Acc 1</option>
-                    <option>Instagram Acc 2</option>
-                </select>
-                <button onclick="this.parentElement.remove()" class="bg-red-400 text-white px-4 rounded-lg font-bold text-xl">-</button>
-            `;
-            container.appendChild(div);
+            div.className = 'flex gap-2';
+            div.innerHTML = `<select class="account-select flex-1 bg-black border border-zinc-800 rounded-xl p-4 text-white"><option>Hauptaccount</option><option>2. Account</option><option>YouTube</option><option>Instagram Acc 1</option><option>Instagram Acc 2</option></select><button onclick="this.parentElement.remove()" class="bg-zinc-800 text-red-500 px-5 rounded-xl font-bold text-2xl">-</button>`;
+            document.getElementById('accountInputs').appendChild(div);
         }
 
-        /* --- DRIVE FOLDER LOGIC --- */
-        async function getOrCreateFolder() {
-            // Suchen nach dem Ordner
-            const response = await gapi.client.drive.files.list({
-                q: `name = '${FOLDER_NAME}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
-                fields: 'files(id, name)',
-                spaces: 'drive'
-            });
-
-            const files = response.result.files;
-            if (files && files.length > 0) {
-                return files[0].id;
-            } else {
-                // Ordner erstellen, falls nicht gefunden
-                const folderMetadata = {
-                    name: FOLDER_NAME,
-                    mimeType: 'application/vnd.google-apps.folder'
-                };
-                const folder = await gapi.client.drive.files.create({
-                    resource: folderMetadata,
-                    fields: 'id'
-                });
-                return folder.result.id;
-            }
+        async function getFolderId() {
+            const resp = await gapi.client.drive.files.list({ q: `name = '${FOLDER_NAME}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false` });
+            if (resp.result.files.length > 0) return resp.result.files[0].id;
+            const folder = await gapi.client.drive.files.create({ resource: { name: FOLDER_NAME, mimeType: 'application/vnd.google-apps.folder' }, fields: 'id' });
+            return folder.result.id;
         }
 
-        /* --- UPLOAD PROCESS --- */
         async function startUploadProcess() {
             const fileInput = document.getElementById('videoFile');
-            if (!fileInput.files[0]) return alert("Bitte wähle zuerst ein Video aus!");
-
-            const uploadBtn = document.getElementById('uploadBtn');
-            const statusInfo = document.getElementById('statusInfo');
-            const progBar = document.getElementById('progressBar');
-            const progCont = document.getElementById('progressContainer');
-
-            uploadBtn.disabled = true;
-            statusInfo.classList.remove('hidden');
-            progCont.classList.remove('hidden');
-            progBar.style.width = "10%";
-
+            if (!fileInput.files[0]) return alert("Video wählen!");
+            const btn = document.getElementById('uploadBtn');
+            const progUI = document.getElementById('progressUI');
+            btn.disabled = true; progUI.classList.remove('hidden');
+            
             try {
-                // 1. Ordner ID holen
-                const folderId = await getOrCreateFolder();
-                statusInfo.innerText = "Video wird hochgeladen...";
-                progBar.style.width = "30%";
-
-                // 2. Video Metadaten vorbereiten
-                const title = document.getElementById('title').value || fileInput.files[0].name;
-                const caption = document.getElementById('caption').value;
-                const accounts = Array.from(document.querySelectorAll('.account-select')).map(s => s.value).join(', ');
+                const folderId = await getFolderId();
                 const file = fileInput.files[0];
-
-                const metadata = {
-                    name: title,
-                    mimeType: file.type,
-                    parents: [folderId],
-                    description: `Caption: ${caption}\nAccounts: ${accounts}`
-                };
-
-                // 3. Multipart Upload (Metadata + File)
+                const title = document.getElementById('title').value || file.name;
+                const caption = document.getElementById('caption').value;
+                const accs = Array.from(document.querySelectorAll('.account-select')).map(s => s.value).join(', ');
+                
+                const metadata = { name: title, mimeType: file.type, parents: [folderId], description: `CAPTION: ${caption} | ACCOUNTS: ${accs}` };
                 const form = new FormData();
                 form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
                 form.append('file', file);
 
-                const uploadResponse = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
-                    method: 'POST',
-                    headers: new Headers({ 'Authorization': 'Bearer ' + gapi.client.getToken().access_token }),
-                    body: form
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart');
+                xhr.setRequestHeader('Authorization', 'Bearer ' + gapi.client.getToken().access_token);
+                xhr.upload.onprogress = (e) => { const p = Math.round((e.loaded / e.total) * 100); document.getElementById('progressBar').style.width = p+'%'; document.getElementById('percentInfo').innerText = p+'%'; };
+                xhr.onload = () => { alert("Erfolg!"); location.reload(); };
+                xhr.send(form);
+            } catch (e) { alert("Fehler!"); btn.disabled = false; }
+        }
+
+        async function loadLibrary() {
+            const grid = document.getElementById('libraryGrid');
+            grid.innerHTML = '<div class="col-span-2 text-center text-zinc-500 animate-pulse">Lade Goldstücke...</div>';
+            try {
+                const folderId = await getFolderId();
+                const resp = await gapi.client.drive.files.list({ 
+                    q: `'${folderId}' in parents and trashed = false`, 
+                    fields: 'files(id, name, description, thumbnailLink, createdTime, webContentLink)',
+                    orderBy: 'createdTime desc'
                 });
+                const files = resp.result.files;
+                grid.innerHTML = '';
+                if (!files.length) grid.innerHTML = '<div class="col-span-2 text-center text-zinc-600">Keine Videos gefunden.</div>';
+                files.forEach(f => {
+                    const div = document.createElement('div');
+                    div.className = "bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden cursor-pointer hover:border-gold transition-all active:scale-95";
+                    div.onclick = () => openModal(f);
+                    div.innerHTML = `
+                        <div class="h-32 bg-black flex items-center justify-center relative">
+                            ${f.thumbnailLink ? `<img src="${f.thumbnailLink}" class="w-full h-full object-cover opacity-50">` : ''}
+                            <span class="absolute text-gold text-2xl">▶</span>
+                        </div>
+                        <div class="p-3 text-[10px] font-bold uppercase truncate">${f.name}</div>
+                    `;
+                    grid.appendChild(div);
+                });
+            } catch (e) { grid.innerHTML = 'Fehler beim Laden.'; }
+        }
 
-                if (uploadResponse.ok) {
-                    progBar.style.width = "100%";
-                    statusInfo.innerText = "Fertig! Gespeichert in '" + FOLDER_NAME + "'";
-                    setTimeout(() => {
-                        alert("Erfolgreich hochgeladen!");
-                        location.reload();
-                    }, 1000);
-                } else {
-                    throw new Error("Upload fehlgeschlagen");
-                }
+        function openModal(f) {
+            const modal = document.getElementById('videoModal');
+            const content = document.getElementById('modalContent');
+            const desc = f.description || "";
+            const caption = desc.split('|')[0]?.replace('CAPTION:', '').trim() || "";
+            const accounts = desc.split('|')[1]?.replace('ACCOUNTS:', '').trim() || "Keine";
 
-            } catch (err) {
-                console.error(err);
-                alert("Fehler: " + err.message);
-                uploadBtn.disabled = false;
+            content.innerHTML = `
+                <div class="space-y-4">
+                    <h3 class="text-gold font-black text-xl uppercase tracking-tighter">${f.name}</h3>
+                    
+                    <div class="space-y-1">
+                        <label class="text-[10px] text-zinc-500 uppercase font-bold">Caption</label>
+                        <div class="flex gap-2">
+                            <div id="copyCap" class="flex-1 bg-black p-3 rounded-lg text-sm text-zinc-300 border border-zinc-800">${caption || 'Keine Caption'}</div>
+                            <button onclick="copyToClipboard('${caption}', this)" class="bg-zinc-800 text-gold px-4 rounded-lg text-xs font-bold uppercase">Copy</button>
+                        </div>
+                    </div>
+
+                    <div class="space-y-1">
+                        <label class="text-[10px] text-zinc-500 uppercase font-bold">Accounts</label>
+                        <div class="flex flex-wrap gap-2">
+                            ${accounts.split(',').map(a => `<span class="bg-gold/10 text-gold border border-gold/20 px-3 py-1 rounded-full text-[10px] font-bold uppercase">${a.trim()}</span>`).join('')}
+                        </div>
+                    </div>
+
+                    <div class="pt-4 flex flex-col gap-3">
+                        <a href="${f.webContentLink}" target="_blank" class="btn-gold w-full py-4 rounded-xl text-center shadow-lg uppercase tracking-widest text-sm">Download Video</a>
+                        <button onclick="deleteVideo('${f.id}')" class="text-red-800 text-[10px] font-bold uppercase tracking-widest hover:text-red-500 transition">Video löschen</button>
+                    </div>
+                </div>
+            `;
+            modal.classList.remove('hidden');
+        }
+
+        function closeModal() { document.getElementById('videoModal').classList.add('hidden'); }
+
+        function copyToClipboard(text, btn) {
+            navigator.clipboard.writeText(text);
+            const oldText = btn.innerText;
+            btn.innerText = "COPIED!";
+            btn.classList.replace('text-gold', 'text-white');
+            setTimeout(() => { btn.innerText = oldText; btn.classList.replace('text-white', 'text-gold'); }, 2000);
+        }
+
+        async function deleteVideo(id) {
+            if(confirm("Video wirklich aus Drive löschen?")) {
+                await gapi.client.drive.files.delete({ fileId: id });
+                closeModal();
+                loadLibrary();
             }
         }
     </script>
+    <script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
+    <script async defer src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
 </body>
 </html>
