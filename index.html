@@ -1,1 +1,241 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drive Video Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Identity Services & API Client -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://apis.google.com/js/api.js" async defer></script>
+</head>
+<body class="bg-gray-50 min-h-screen pb-10">
 
+    <header class="bg-blue-700 text-white p-4 shadow-lg sticky top-0 z-20">
+        <h1 class="text-xl font-bold text-center italic">Chef Video Uploader</h1>
+    </header>
+
+    <main class="max-w-md mx-auto p-4 space-y-6">
+        
+        <!-- Auth Section -->
+        <section id="authSection" class="bg-white p-6 rounded-xl shadow-sm text-center border border-gray-200">
+            <p class="mb-4 text-gray-600">Verbindung mit Google Drive herstellen:</p>
+            <button id="authBtn" onclick="handleAuthClick()" class="bg-white border border-gray-300 flex items-center justify-center gap-2 w-full py-3 rounded-lg font-bold hover:bg-gray-50 shadow-sm transition">
+                <img src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png" class="w-6" alt="">
+                Mit Google anmelden
+            </button>
+            <button id="signoutBtn" onclick="handleSignoutClick()" class="hidden w-full text-sm text-red-500 mt-4 underline">Abmelden</button>
+        </section>
+
+        <!-- Upload Form (Hidden until Auth) -->
+        <section id="uploadForm" class="hidden bg-white p-5 rounded-xl shadow-md border border-gray-100 space-y-5">
+            <h2 class="text-lg font-bold text-gray-800 border-b pb-2">Neuer Upload</h2>
+            
+            <div>
+                <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Video Datei</label>
+                <input type="file" id="videoFile" accept="video/*" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Titel</label>
+                <input type="text" id="title" placeholder="z.B. Urlaub 2024" class="w-full border p-3 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+            
+            <div>
+                <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Caption / Beschreibung</label>
+                <textarea id="caption" rows="3" placeholder="Schreibe etwas dazu..." class="w-full border p-3 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none"></textarea>
+            </div>
+
+            <div id="accountsWrapper">
+                <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Ziel-Accounts (Mehrfachauswahl)</label>
+                <div id="accountInputs" class="space-y-2">
+                    <div class="flex gap-2">
+                        <select class="account-select flex-1 bg-gray-50 border rounded-lg p-3 outline-none focus:ring-2 focus:ring-blue-500">
+                            <option>Hauptaccount</option>
+                            <option>2. Account</option>
+                            <option>YouTube</option>
+                            <option>Instagram Acc 1</option>
+                            <option>Instagram Acc 2</option>
+                        </select>
+                        <button onclick="addAccountField()" class="bg-green-500 text-white px-4 rounded-lg font-bold text-xl">+</button>
+                    </div>
+                </div>
+            </div>
+
+            <button id="uploadBtn" onclick="startUploadProcess()" class="w-full bg-blue-600 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-blue-700 active:scale-95 transition-all">
+                In Drive Ordner speichern
+            </button>
+            
+            <!-- Progress UI -->
+            <div id="statusInfo" class="hidden text-center text-sm font-medium text-blue-600 animate-pulse">
+                Ordner wird gesucht/erstellt...
+            </div>
+            <div id="progressContainer" class="hidden w-full bg-gray-200 rounded-full h-3">
+                <div id="progressBar" class="bg-blue-600 h-3 rounded-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+        </section>
+
+        <p id="footerInfo" class="text-[10px] text-gray-400 text-center uppercase tracking-widest leading-relaxed">
+            Deine Videos werden im Ordner <br><b>"Video App Uploads"</b> auf Google Drive gespeichert.
+        </p>
+    </main>
+
+    <script>
+        /* --- KONFIGURATION --- */
+        const CLIENT_ID = '816126303003-alj4h52nrdsko9u96tiftn4etj228i88.apps.googleusercontent.com';
+        const API_KEY = 'AIzaSyCjsxob1ip3TFL42Z-Fc9PPNFQ20iBVMho';
+        const FOLDER_NAME = "Video App Uploads";
+        const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest';
+        const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+
+        let tokenClient;
+        let gapiInited = false;
+        let gisInited = false;
+
+        // Initialize GAPI
+        function gapiLoaded() {
+            gapi.load('client', async () => {
+                await gapi.client.init({ apiKey: API_KEY, discoveryDocs: [DISCOVERY_DOC] });
+                gapiInited = true;
+            });
+        }
+
+        // Initialize Google Identity Services
+        function gisLoaded() {
+            tokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: CLIENT_ID,
+                scope: SCOPES,
+                callback: '', // defined later
+            });
+            gisInited = true;
+        }
+
+        window.onload = () => { gapiLoaded(); gisLoaded(); };
+
+        function handleAuthClick() {
+            tokenClient.callback = async (resp) => {
+                if (resp.error !== undefined) throw (resp);
+                document.getElementById('authSection').classList.add('hidden');
+                document.getElementById('uploadForm').classList.remove('hidden');
+                document.getElementById('signoutBtn').classList.remove('hidden');
+            };
+            tokenClient.requestAccessToken({prompt: 'consent'});
+        }
+
+        function handleSignoutClick() {
+            const token = gapi.client.getToken();
+            if (token !== null) {
+                google.accounts.oauth2.revoke(token.access_token);
+                gapi.client.setToken('');
+                location.reload();
+            }
+        }
+
+        function addAccountField() {
+            const container = document.getElementById('accountInputs');
+            const div = document.createElement('div');
+            div.className = 'flex gap-2 animate-in slide-in-from-left duration-200';
+            div.innerHTML = `
+                <select class="account-select flex-1 bg-gray-50 border rounded-lg p-3">
+                    <option>Hauptaccount</option>
+                    <option>2. Account</option>
+                    <option>YouTube</option>
+                    <option>Instagram Acc 1</option>
+                    <option>Instagram Acc 2</option>
+                </select>
+                <button onclick="this.parentElement.remove()" class="bg-red-400 text-white px-4 rounded-lg font-bold text-xl">-</button>
+            `;
+            container.appendChild(div);
+        }
+
+        /* --- DRIVE FOLDER LOGIC --- */
+        async function getOrCreateFolder() {
+            // Suchen nach dem Ordner
+            const response = await gapi.client.drive.files.list({
+                q: `name = '${FOLDER_NAME}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
+                fields: 'files(id, name)',
+                spaces: 'drive'
+            });
+
+            const files = response.result.files;
+            if (files && files.length > 0) {
+                return files[0].id;
+            } else {
+                // Ordner erstellen, falls nicht gefunden
+                const folderMetadata = {
+                    name: FOLDER_NAME,
+                    mimeType: 'application/vnd.google-apps.folder'
+                };
+                const folder = await gapi.client.drive.files.create({
+                    resource: folderMetadata,
+                    fields: 'id'
+                });
+                return folder.result.id;
+            }
+        }
+
+        /* --- UPLOAD PROCESS --- */
+        async function startUploadProcess() {
+            const fileInput = document.getElementById('videoFile');
+            if (!fileInput.files[0]) return alert("Bitte wähle zuerst ein Video aus!");
+
+            const uploadBtn = document.getElementById('uploadBtn');
+            const statusInfo = document.getElementById('statusInfo');
+            const progBar = document.getElementById('progressBar');
+            const progCont = document.getElementById('progressContainer');
+
+            uploadBtn.disabled = true;
+            statusInfo.classList.remove('hidden');
+            progCont.classList.remove('hidden');
+            progBar.style.width = "10%";
+
+            try {
+                // 1. Ordner ID holen
+                const folderId = await getOrCreateFolder();
+                statusInfo.innerText = "Video wird hochgeladen...";
+                progBar.style.width = "30%";
+
+                // 2. Video Metadaten vorbereiten
+                const title = document.getElementById('title').value || fileInput.files[0].name;
+                const caption = document.getElementById('caption').value;
+                const accounts = Array.from(document.querySelectorAll('.account-select')).map(s => s.value).join(', ');
+                const file = fileInput.files[0];
+
+                const metadata = {
+                    name: title,
+                    mimeType: file.type,
+                    parents: [folderId],
+                    description: `Caption: ${caption}\nAccounts: ${accounts}`
+                };
+
+                // 3. Multipart Upload (Metadata + File)
+                const form = new FormData();
+                form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+                form.append('file', file);
+
+                const uploadResponse = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+                    method: 'POST',
+                    headers: new Headers({ 'Authorization': 'Bearer ' + gapi.client.getToken().access_token }),
+                    body: form
+                });
+
+                if (uploadResponse.ok) {
+                    progBar.style.width = "100%";
+                    statusInfo.innerText = "Fertig! Gespeichert in '" + FOLDER_NAME + "'";
+                    setTimeout(() => {
+                        alert("Erfolgreich hochgeladen!");
+                        location.reload();
+                    }, 1000);
+                } else {
+                    throw new Error("Upload fehlgeschlagen");
+                }
+
+            } catch (err) {
+                console.error(err);
+                alert("Fehler: " + err.message);
+                uploadBtn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
