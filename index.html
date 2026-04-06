@@ -370,6 +370,38 @@
             } catch (e) { grid.innerHTML = 'Fehler beim Laden.'; }
         }
 
+        // NEU: Echte Download-Funktion ohne Redirection
+        async function downloadVideo(fileId, fileName, btn) {
+            haptics();
+            const originalContent = btn.innerHTML;
+            btn.innerHTML = "<span>⏳</span> Lade...";
+            btn.disabled = true;
+
+            try {
+                const response = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('vault_token') }
+                });
+
+                if (!response.ok) throw new Error("Fehler");
+
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = fileName; // Nutzt den Videotitel als Name
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                btn.innerHTML = originalContent;
+                btn.disabled = false;
+                haptics();
+            } catch (e) {
+                alert("Download fehlgeschlagen. Bitte versuche es erneut.");
+                btn.innerHTML = originalContent;
+                btn.disabled = false;
+            }
+        }
+
         async function openModal(f) {
             const modal = document.getElementById('videoModal');
             const content = document.getElementById('modalContent');
@@ -411,9 +443,9 @@
                     </div>
 
                     <div class="pt-6 flex flex-col gap-4 safe-area-inset">
-                        <a href="${f.webContentLink}" onclick="haptics()" target="_blank" class="btn-apple-gold w-full py-5 rounded-2xl text-center shadow-md uppercase tracking-widest text-xs flex items-center justify-center gap-3">
+                        <button onclick="downloadVideo('${f.id}', '${f.name.replace(/[^a-z0-9]/gi, '_')}.mp4', this)" class="btn-apple-gold w-full py-5 rounded-2xl text-center shadow-md uppercase tracking-widest text-xs flex items-center justify-center gap-3">
                             <span>⬇</span> Video Download
-                        </a>
+                        </button>
                         <button onclick="haptics(); deleteVideo('${f.id}')" class="text-zinc-300 text-[10px] font-bold uppercase tracking-[0.3em] py-4 hover:text-red-500 transition">
                             Video Löschen
                         </button>
