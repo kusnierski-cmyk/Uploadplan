@@ -88,7 +88,7 @@
             <img src="icon-192.png" alt="Logo" class="w-10 h-10 rounded-xl shadow-sm border border-black/5">
             <div class="flex flex-col">
                 <span class="text-[9px] uppercase tracking-[0.3em] text-zinc-400 font-bold">Vault System</span>
-                <span class="text-sm font-extrabold tracking-tight">CHEF <span class="text-gold">VAULT</span></span>
+                <span class="text-sm font-extrabold tracking-tight text-black">CHEF <span class="text-gold">VAULT</span></span>
             </div>
         </div>
         <div id="statusDot" class="w-2 h-2 rounded-full bg-zinc-200 transition-all duration-500"></div>
@@ -124,8 +124,8 @@
 
                 <div class="bg-[#FBFBFD] rounded-[2.5rem] p-8 space-y-6 border border-zinc-100">
                     <div class="relative group">
-                        <input type="file" id="videoFile" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onchange="haptics()">
-                        <div class="apple-input rounded-3xl p-10 text-center border-dashed border-2 border-zinc-200 flex flex-col items-center gap-3">
+                        <input type="file" id="videoFile" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                        <div id="dropZone" class="apple-input rounded-3xl p-10 text-center border-dashed border-2 border-zinc-200 flex flex-col items-center gap-3">
                             <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm text-gold text-xl">＋</div>
                             <span class="text-zinc-400 text-xs font-bold uppercase tracking-widest" id="fileNameDisplay">Datei wählen</span>
                         </div>
@@ -134,7 +134,6 @@
                     <div class="space-y-4">
                         <input type="text" id="title" placeholder="Titel" class="apple-input w-full p-5 rounded-2xl outline-none text-sm font-bold" oninput="haptics()">
                         
-                        <!-- NEU: Post-Datum Feld -->
                         <div class="space-y-2">
                             <label class="text-[10px] text-zinc-400 uppercase font-black tracking-widest pl-4">Posting-Datum</label>
                             <input type="date" id="postDate" class="apple-input w-full p-5 rounded-2xl outline-none text-sm font-bold" oninput="haptics()">
@@ -170,7 +169,7 @@
             <!-- Library -->
             <div class="space-y-8">
                 <div class="px-2 space-y-6">
-                    <h2 class="text-3xl font-extrabold tracking-tight italic">Mediathek</h2>
+                    <h2 class="text-3xl font-extrabold tracking-tight italic text-black">Mediathek</h2>
                     
                     <div class="segmented-control flex text-[11px] font-bold uppercase tracking-wider text-zinc-500">
                         <button onclick="switchLibraryTab('video')" id="tabLibVideo" class="flex-1 py-3 rounded-xl transition-all tab-active">Videos</button>
@@ -178,7 +177,6 @@
                         <button onclick="switchLibraryTab('sound')" id="tabLibSound" class="flex-1 py-3 rounded-xl transition-all">Sound</button>
                     </div>
 
-                    <!-- NEU: Datums-Filter Bar -->
                     <div class="flex items-center gap-2 overflow-x-auto pb-2">
                         <button onclick="filterByDate('today')" id="filterToday" class="whitespace-nowrap glass-nav px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest text-black border border-zinc-200 tab-active">Heute</button>
                         <button onclick="filterByDate('all')" id="filterAll" class="whitespace-nowrap glass-nav px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest text-zinc-400 border border-zinc-100">Alle</button>
@@ -209,10 +207,22 @@
         const CATEGORIES = { video: "Fertige Videos", raw: "Rohmaterial", sound: "Tonaufnahmen" };
         let currentUploadTab = 'video';
         let currentLibraryTab = 'video';
-        let activeDateFilter = 'today'; // Standard: Heute
+        let activeDateFilter = 'today';
         let tokenClient;
 
         function haptics() { if (window.navigator && window.navigator.vibrate) { window.navigator.vibrate(20); } }
+
+        // FILE SELECTION DISPLAY FIX
+        document.getElementById('videoFile')?.addEventListener('change', function(e) {
+            haptics();
+            const fileName = e.target.files[0]?.name || "Datei auswählen";
+            const display = document.getElementById('fileNameDisplay');
+            const zone = document.getElementById('dropZone');
+            display.innerText = "Gewählt: " + fileName;
+            display.style.color = '#D4AF37';
+            zone.style.borderColor = '#D4AF37';
+            zone.style.background = '#FFFFFF';
+        });
 
         function switchUploadTab(type) {
             haptics(); currentUploadTab = type;
@@ -234,14 +244,8 @@
             document.getElementById('filterAll').classList.remove('tab-active', 'text-black');
             document.getElementById('filterToday').classList.add('text-zinc-400');
             document.getElementById('filterAll').classList.add('text-zinc-400');
-
-            if(mode === 'today') {
-                document.getElementById('filterToday').classList.add('tab-active', 'text-black');
-                document.getElementById('libraryDateFilter').value = "";
-            } else if(mode === 'all') {
-                document.getElementById('filterAll').classList.add('tab-active', 'text-black');
-                document.getElementById('libraryDateFilter').value = "";
-            }
+            if(mode === 'today') { document.getElementById('filterToday').classList.add('tab-active', 'text-black'); document.getElementById('libraryDateFilter').value = ""; }
+            else if(mode === 'all') { document.getElementById('filterAll').classList.add('tab-active', 'text-black'); document.getElementById('libraryDateFilter').value = ""; }
             loadLibrary();
         }
 
@@ -288,12 +292,7 @@
                 const caption = document.getElementById('caption').value;
                 const accs = (currentUploadTab === 'video') ? Array.from(document.querySelectorAll('.account-select')).map(s => s.value).join(', ') : 'N/A';
                 
-                const metadata = { 
-                    name: title, 
-                    mimeType: file.type, 
-                    parents: [catId], 
-                    description: `POSTDATE: ${postDate} | CAPTION: ${caption} | ACCOUNTS: ${accs}` 
-                };
+                const metadata = { name: title, mimeType: file.type, parents: [catId], description: `POSTDATE: ${postDate} | CAPTION: ${caption} | ACCOUNTS: ${accs}` };
                 const form = new FormData();
                 form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
                 form.append('file', file);
@@ -315,20 +314,12 @@
                 const catId = await getFolder(CATEGORIES[currentLibraryTab], mainId);
                 const resp = await gapi.client.drive.files.list({ q: `'${catId}' in parents and trashed = false`, fields: 'files(id, name, description, thumbnailLink, webContentLink, mimeType)', orderBy: 'createdTime desc' });
                 let files = resp.result.files;
-
-                // Datum Filter Logik
                 const today = new Date().toISOString().split('T')[0];
                 const customDate = document.getElementById('libraryDateFilter').value;
-
-                if (activeDateFilter === 'today') {
-                    files = files.filter(f => f.description && f.description.includes(`POSTDATE: ${today}`));
-                } else if (activeDateFilter === 'custom' && customDate) {
-                    files = files.filter(f => f.description && f.description.includes(`POSTDATE: ${customDate}`));
-                }
-
+                if (activeDateFilter === 'today') { files = files.filter(f => f.description && f.description.includes(`POSTDATE: ${today}`)); }
+                else if (activeDateFilter === 'custom' && customDate) { files = files.filter(f => f.description && f.description.includes(`POSTDATE: ${customDate}`)); }
                 grid.innerHTML = '';
-                if (!files || !files.length) { grid.innerHTML = '<div class="col-span-2 text-center text-zinc-300 py-24 text-[10px] uppercase tracking-widest font-black">Keine Einträge gefunden</div>'; return; }
-                
+                if (!files || !files.length) { grid.innerHTML = '<div class="col-span-2 text-center text-zinc-300 py-24 text-[10px] uppercase tracking-widest font-black">Vault Leer</div>'; return; }
                 files.forEach(f => {
                     const isAudio = f.mimeType.includes('audio');
                     const div = document.createElement('div');
@@ -337,11 +328,7 @@
                     div.innerHTML = `
                         <div class="h-48 bg-zinc-50 flex items-center justify-center relative">
                             ${f.thumbnailLink ? `<img src="${f.thumbnailLink.replace('=s220', '=s800')}" class="w-full h-full object-cover">` : ''}
-                            <div class="absolute inset-0 flex items-center justify-center">
-                                <div class="w-14 h-14 bg-white/90 rounded-full flex items-center justify-center shadow-xl backdrop-blur-md">
-                                    <span class="text-gold text-2xl">${isAudio ? '🎙️' : '▶'}</span>
-                                </div>
-                            </div>
+                            <div class="absolute inset-0 flex items-center justify-center"><div class="w-14 h-14 bg-white/90 rounded-full flex items-center justify-center shadow-xl backdrop-blur-md"><span class="text-gold text-2xl">${isAudio ? '🎙️' : '▶'}</span></div></div>
                         </div>
                         <div class="p-5 text-[10px] font-black uppercase truncate text-black text-center tracking-tighter">${f.name}</div>
                     `;
@@ -350,21 +337,50 @@
             } catch (e) { grid.innerHTML = 'Fehler.'; }
         }
 
-        async function downloadFile(fileId, fileName, btn) {
-            haptics(); const original = btn.innerHTML; btn.innerHTML = "<span>⏳</span>"; btn.disabled = true;
+        // NEW POSTING FUNCTION (SHARE + COPY)
+        async function postFile(fileId, fileName, title, caption, btn) {
+            haptics();
+            const original = btn.innerHTML;
+            btn.innerHTML = "<span>⏳</span> Bereite Post vor...";
+            btn.disabled = true;
+
             try {
-                const response = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, { headers: { 'Authorization': 'Bearer ' + localStorage.getItem('vault_token') } });
-                const blob = await response.blob(); const url = URL.createObjectURL(blob);
-                const a = document.createElement('a'); a.href = url; a.download = fileName; a.click();
-                btn.innerHTML = original; btn.disabled = false; haptics();
-            } catch (e) { alert("Download fehlgeschlagen."); btn.innerHTML = original; btn.disabled = false; }
+                // Copy Title and Caption separately
+                await navigator.clipboard.writeText(title);
+                setTimeout(async () => {
+                    await navigator.clipboard.writeText(caption);
+                }, 100);
+
+                const response = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('vault_token') }
+                });
+                const blob = await response.blob();
+                const file = new File([blob], fileName, { type: blob.type });
+
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    await navigator.share({
+                        files: [file],
+                        title: title,
+                        text: caption
+                    });
+                } else {
+                    // Fallback to direct download
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a'); a.href = url; a.download = fileName; a.click();
+                }
+            } catch (e) {
+                console.error("Share failed", e);
+            } finally {
+                btn.innerHTML = original;
+                btn.disabled = false;
+                haptics();
+            }
         }
 
         function openModal(f) {
             const modal = document.getElementById('videoModal');
             const content = document.getElementById('modalContent');
             const desc = f.description || "";
-            
             const postDate = desc.split('|')[0]?.replace('POSTDATE:', '').trim() || "Kein Datum";
             const caption = desc.split('|')[1]?.replace('CAPTION:', '').trim() || "Keine Beschreibung";
             const accounts = desc.split('|')[2]?.replace('ACCOUNTS:', '').trim() || "N/A";
@@ -387,8 +403,8 @@
                         ${accounts !== 'N/A' && accounts !== '' ? `<div class="space-y-2 text-center"><label class="text-[10px] text-zinc-400 uppercase font-black tracking-widest">Target Accounts</label>
                         <div class="bg-zinc-50 p-5 rounded-[2rem] flex flex-wrap gap-2 justify-center border border-zinc-100">${accounts.split(',').map(a => `<span class="bg-gold/10 text-gold border border-gold/10 px-4 py-2 rounded-full text-[9px] font-black uppercase tracking-tighter">${a.trim()}</span>`).join('')}</div></div>` : ''}
                     </div>
-                    <div class="pt-6 flex flex-col gap-4 safe-area-inset">
-                        <button onclick="downloadFile('${f.id}', '${f.name}', this)" class="btn-gold w-full py-6 rounded-3xl shadow-2xl uppercase tracking-widest text-[11px] flex items-center justify-center gap-3"><span>⬇</span> Download</button>
+                    <div class="pt-6 flex flex-col gap-4">
+                        <button onclick="postFile('${f.id}', '${f.name}', '${f.name.replace(/'/g, "\\'")}', '${caption.replace(/'/g, "\\'").replace(/\n/g, "\\n")}', this)" class="btn-gold w-full py-6 rounded-3xl shadow-2xl uppercase tracking-widest text-[11px] flex items-center justify-center gap-3 italic font-black">Video posten</button>
                         <button onclick="haptics(); deleteVideo('${f.id}')" class="text-zinc-300 text-[10px] font-bold uppercase tracking-[0.3em] py-4 hover:text-red-500 transition">Vault Eintrag löschen</button>
                     </div>
                 </div>`;
@@ -396,7 +412,7 @@
         }
 
         function closeModal() { haptics(); document.getElementById('videoModal').classList.add('hidden'); document.body.style.overflow = 'auto'; }
-        function copyToClipboard(text, btn) { navigator.clipboard.writeText(text).then(() => { haptics(); const oldText = btn.innerText; btn.innerText = "COPIED"; btn.style.color = "#000"; setTimeout(() => { btn.innerText = oldText; btn.style.color = "#D4AF37"; }, 1500); }); }
+        function copyToClipboard(text, btn) { navigator.clipboard.writeText(text).then(() => { const oldText = btn.innerText; btn.innerText = "COPIED"; btn.style.color = "#000"; setTimeout(() => { btn.innerText = oldText; btn.style.color = "#D4AF37"; }, 1500); }); }
         async function deleteVideo(id) { haptics(); if(confirm("Dauerhaft aus dem Vault entfernen?")) { await gapi.client.drive.files.delete({ fileId: id }); closeModal(); loadLibrary(); } }
     </script>
 </body>
